@@ -5,8 +5,6 @@ services:
       dockerfile: Dockerfile
     container_name: sikagas_app
     restart: unless-stopped
-    # Expose port 8011 ke host (pakai php built-in server buat simplicity)
-    # Kalau mau pakai nginx native sebagai reverse proxy ke php-fpm, lihat catatan di bawah
     ports:
       - "8037:8000"
     environment:
@@ -15,11 +13,29 @@ services:
     env_file:
       - .env
     volumes:
-      # Persist storage (logs, uploads)
       - ./storage:/var/www/html/storage
-      # Persist public uploads
       - ./public/storage:/var/www/html/public/storage
-    # Pakai network host agar bisa connect ke MySQL native di VPS
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
     command: php artisan serve --host=0.0.0.0 --port=8000
+
+  db:
+    image: mysql:8.0
+    container_name: sikagas_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: sikagas
+      MYSQL_USER: jeki
+      MYSQL_PASSWORD: sikagas123
+      MYSQL_ROOT_PASSWORD: root123
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "jeki", "-psikagas123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dbdata:
