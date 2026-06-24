@@ -3,12 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: uts_ramadhani_app
+    container_name: sikagas_app
     restart: unless-stopped
     # Expose port 8011 ke host (pakai php built-in server buat simplicity)
     # Kalau mau pakai nginx native sebagai reverse proxy ke php-fpm, lihat catatan di bawah
     ports:
-      - "8011:8000"
+      - "8037:8000"
     environment:
       - APP_ENV=production
       - APP_DEBUG=false
