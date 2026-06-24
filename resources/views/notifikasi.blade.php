@@ -18,22 +18,24 @@
     nav {
       background: #fff;
       border-bottom: 1px solid #e5e7eb;
-      padding: 0 1.5rem;
-      height: 60px;
+      padding: 0 1rem;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 0.5rem;
     }
-    .nav-brand { font-size: 1rem; font-weight: 600; color: #111827; }
-    .nav-links { display: flex; gap: 6px; }
+    .nav-brand { font-size: 0.9rem; font-weight: 600; color: #111827; white-space: nowrap; flex-shrink: 0; }
+    .nav-links { display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 1; }
+    .nav-links::-webkit-scrollbar { display: none; }
     .nav-links a {
-      text-decoration: none; font-size: 0.82rem; font-weight: 500;
-      color: #6b7280; padding: 7px 14px; border-radius: 8px; transition: all 0.15s;
+      text-decoration: none; font-size: 0.78rem; font-weight: 500;
+      color: #6b7280; padding: 6px 10px; border-radius: 8px; transition: all 0.15s; white-space: nowrap;
     }
     .nav-links a:hover { background: #f3f4f6; color: #111827; }
     .nav-links a.active { background: #1f2937; color: #fff; }
 
-    main { max-width: 860px; margin: 0 auto; padding: 1.75rem 1.25rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem; }
 
     h2 { font-size: 1.1rem; font-weight: 600; color: #111827; margin-bottom: 1.25rem; }
 
@@ -85,6 +87,8 @@
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       overflow: hidden;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -116,6 +120,8 @@
     @media (max-width: 580px) {
       .filter-bar { flex-direction: column; }
       .filter-bar input, .filter-bar select, .btn-filter { width: 100%; }
+      table { min-width: 480px; }
+      h2 { font-size: 1rem; }
     }
   </style>
 </head>

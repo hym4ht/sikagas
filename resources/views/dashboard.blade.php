@@ -19,35 +19,47 @@
     nav {
       background: #fff;
       border-bottom: 1px solid #e5e7eb;
-      padding: 0 1.5rem;
-      height: 60px;
+      padding: 0 1rem;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 0.5rem;
     }
 
     .nav-brand {
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: #111827;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    .nav-links { display: flex; gap: 6px; }
+    .nav-links {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-shrink: 1;
+    }
+    .nav-links::-webkit-scrollbar { display: none; }
 
     .nav-links a {
       text-decoration: none;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 500;
       color: #6b7280;
-      padding: 7px 14px;
+      padding: 6px 10px;
       border-radius: 8px;
       transition: all 0.15s;
+      white-space: nowrap;
     }
     .nav-links a:hover { background: #f3f4f6; color: #111827; }
     .nav-links a.active { background: #1f2937; color: #fff; }
 
     /* CONTENT */
-    main { max-width: 860px; margin: 0 auto; padding: 1.75rem 1.25rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem; }
 
     /* STATUS BOX */
     #statusBox {
@@ -138,7 +150,13 @@
     .btn-red { background: #dc2626; color: #fff; }
 
     @media (max-width: 580px) {
-      .grid-2, .grid-3, .grid-btn { grid-template-columns: 1fr; }
+      .grid-2, .grid-btn { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+      .card .value { font-size: 1.3rem; }
+      #statusBox { font-size: 0.875rem; padding: 0.85rem 1rem; }
+    }
+    @media (max-width: 360px) {
+      .grid-3 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
