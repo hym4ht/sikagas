@@ -1,0 +1,11 @@
+node_modules
+public/build
+.git
+.env
+*.md
+tests
+docker-compose*.yml
+.editorconfig
+.gitattributes
+.gitignore
+phpunit.xml

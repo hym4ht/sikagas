@@ -1,0 +1,25 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uts_ramadhani_app
+    restart: unless-stopped
+    # Expose port 8011 ke host (pakai php built-in server buat simplicity)
+    # Kalau mau pakai nginx native sebagai reverse proxy ke php-fpm, lihat catatan di bawah
+    ports:
+      - "8011:8000"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    env_file:
+      - .env
+    volumes:
+      # Persist storage (logs, uploads)
+      - ./storage:/var/www/html/storage
+      # Persist public uploads
+      - ./public/storage:/var/www/html/public/storage
+    # Pakai network host agar bisa connect ke MySQL native di VPS
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: php artisan serve --host=0.0.0.0 --port=8000
