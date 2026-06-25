@@ -21,13 +21,16 @@ class SensorController extends Controller
             'status'    => 'required|string|in:AMAN,WASPADA,BAHAYA',
         ]);
 
-        SensorData::create([
+        $sensorData = SensorData::create([
             'gas_value'    => $request->gas_value,
             'gas_ppm'      => $request->gas_ppm ?? null,
             'status'       => $request->status,
             'apar_aktif'   => $request->apar_aktif ?? false,
             'buzzer_aktif' => $request->buzzer_aktif ?? false,
         ]);
+
+        // Broadcast event secara real-time via WebSocket
+        event(new \App\Events\SensorDataUpdated($sensorData));
 
         return response()->json([
             'success' => true,

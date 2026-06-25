@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard | Sistem Monitoring Gas</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -302,17 +303,38 @@ function updateUI(gasVal, statusVal, aparVal, buzzerVal) {
 // Panggil updateUI pertama kali
 updateUI(gas, statusGas, aparAktif, buzzerAktif);
 
-// Polling data terbaru dari API setiap 1 detik (ditambah cache-buster agar tidak dicache browser)
-setInterval(() => {
-  fetch('/api/sensor/latest?t=' + Date.now(), { cache: 'no-store' })
-    .then(response => response.json())
-    .then(data => {
-      if (data) {
-        updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1);
-      }
-    })
-    .catch(err => console.error('Gagal mengambil data sensor:', err));
-}, 1000);
+// Inisialisasi Pusher
+const pusherKey = "{{ env('PUSHER_APP_KEY') }}";
+const pusherCluster = "{{ env('PUSHER_APP_CLUSTER', 'ap1') }}";
+
+if (pusherKey) {
+  // Aktifkan logging Pusher untuk membantu debugging (opsional, bisa dinonaktifkan di prod)
+  Pusher.logToConsole = true;
+
+  const pusher = new Pusher(pusherKey, {
+    cluster: pusherCluster,
+    forceTLS: true
+  });
+
+  const channel = pusher.subscribe('sensor-channel');
+  channel.bind('SensorDataUpdated', function(data) {
+    console.log('Menerima update sensor via WebSocket:', data);
+    updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1);
+  });
+} else {
+  console.warn('Pusher Key belum dikonfigurasi. Menggunakan fallback polling 3 detik...');
+  // Fallback Polling 3 detik jika Pusher belum disetup
+  setInterval(() => {
+    fetch('/api/sensor/latest?t=' + Date.now(), { cache: 'no-store' })
+      .then(response => response.json())
+      .then(data => {
+        if (data) {
+          updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1);
+        }
+      })
+      .catch(err => console.error('Gagal mengambil data sensor:', err));
+  }, 3000);
+}
 
 function kirimWA() {
   let pesan = `🚨 LAPORAN DARURAT 🚨\nGas: ${gas} PPM\nStatus: ${statusGas}\nAPAR: ${aparAktif ? "AKTIF" : "SIAP"}\nBuzzer: ${buzzerAktif ? "AKTIF" : "MATI"}\nLokasi: ${lokasiText}`;
