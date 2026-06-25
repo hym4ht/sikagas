@@ -173,10 +173,24 @@
         </tr>
       </thead>
       <tbody>
-        {{-- Tambahkan data histori di sini --}}
-        <tr>
-          <td colspan="4" class="empty">Belum ada data histori</td>
-        </tr>
+        @forelse($logs as $log)
+          <tr>
+            <td>{{ $log->created_at->format('d-m-Y') }}</td>
+            <td>{{ $log->created_at->format('H:i:s') }}</td>
+            <td>Gas: {{ $log->gas_level }} PPM, Suhu: {{ $log->suhu }}°C, Kebakaran: {{ $log->api_detected ? 'Ya' : 'Tidak' }}</td>
+            <td>
+              @if($log->gas_level > 100 || $log->api_detected)
+                <span style="color: #dc2626; font-weight: bold;">BAHAYA 🚨</span>
+              @else
+                <span style="color: #059669; font-weight: bold;">AMAN ✅</span>
+              @endif
+            </td>
+          </tr>
+        @empty
+          <tr>
+            <td colspan="4" class="empty">Belum ada data histori</td>
+          </tr>
+        @endforelse
       </tbody>
     </table>
   </div>

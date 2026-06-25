@@ -19,6 +19,8 @@ services:
       - ./storage:/var/www/html/storage
       # Persist public uploads
       - ./public/storage:/var/www/html/public/storage
+      # Persist SQLite database
+      - ./database:/var/www/html/database
     # Pakai network host agar bisa connect ke MySQL native di VPS
     extra_hosts:
       - "host.docker.internal:host-gateway"

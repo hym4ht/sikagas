@@ -203,9 +203,10 @@
 </main>
 
 <script>
-let gas = 120;
-let suhu = 27;
-let api = false;
+let gas = {{ $latestLog->gas_level ?? 120 }};
+let suhu = {{ $latestLog->suhu ?? 27 }};
+let api = {{ ($latestLog->api_detected ?? false) ? 'true' : 'false' }};
+let aparStatus = "{{ $latestLog->apar_status ?? 'SIAP' }}";
 let lokasiText = "Tidak tersedia";
 
 if (navigator.geolocation) {
@@ -218,26 +219,73 @@ if (navigator.geolocation) {
   });
 }
 
-if (gas > 100) {
-  document.getElementById("statusGas").innerText = "BAHAYA";
-  document.getElementById("statusGas").classList.add("danger");
-  document.getElementById("notif").style.display = "block";
+function updateUI(gasVal, suhuVal, apiVal, aparVal) {
+  gas = gasVal;
+  suhu = suhuVal;
+  api = apiVal;
+  aparStatus = aparVal;
+
+  document.getElementById("gas").innerHTML = `${gasVal} <span>PPM</span>`;
+  document.getElementById("suhu").innerHTML = `${suhuVal} <span>°C</span>`;
+
+  // Status Gas
+  const statusGasEl = document.getElementById("statusGas");
+  if (gasVal > 100) {
+    statusGasEl.innerText = "BAHAYA";
+    statusGasEl.classList.add("danger");
+  } else {
+    statusGasEl.innerText = "AMAN";
+    statusGasEl.classList.remove("danger");
+  }
+
+  // Status Api
+  const statusApiEl = document.getElementById("statusApi");
+  if (apiVal) {
+    statusApiEl.innerText = "TERDETEKSI 🔥";
+    statusApiEl.classList.add("danger");
+  } else {
+    statusApiEl.innerText = "TIDAK ADA";
+    statusApiEl.classList.remove("danger");
+  }
+
+  // Status APAR
+  const statusAparEl = document.getElementById("statusApar");
+  statusAparEl.innerText = aparVal;
+  if (aparVal === "AKTIF" || apiVal) {
+    statusAparEl.classList.add("danger");
+  } else {
+    statusAparEl.classList.remove("danger");
+  }
+
+  // Peringatan Notif & Status Box
+  const notifEl = document.getElementById("notif");
+  const statusBoxEl = document.getElementById("statusBox");
+
+  if (gasVal > 100 || apiVal) {
+    notifEl.style.display = "block";
+    statusBoxEl.style.background = "#fee2e2";
+    statusBoxEl.style.color = "#b91c1c";
+    statusBoxEl.innerHTML = "<h2>BAHAYA TERDETEKSI 🚨</h2>";
+  } else {
+    notifEl.style.display = "none";
+    statusBoxEl.style.background = "#d1fae5";
+    statusBoxEl.style.color = "#065f46";
+    statusBoxEl.innerHTML = "Sistem Aman ✅";
+  }
 }
 
-if (api === true) {
-  document.getElementById("statusApi").innerText = "TERDETEKSI 🔥";
-  document.getElementById("statusApi").classList.add("danger");
-  document.getElementById("statusApar").innerText = "AKTIF 🧯";
-  document.getElementById("statusApar").classList.add("danger");
-  document.getElementById("notif").style.display = "block";
-}
+// Panggil updateUI pertama kali dengan data dari server
+updateUI(gas, suhu, api, aparStatus);
 
-if (gas > 100 || api === true) {
-  let box = document.getElementById("statusBox");
-  box.style.background = "#fee2e2";
-  box.style.color = "#b91c1c";
-  box.innerHTML = "<h2>BAHAYA TERDETEKSI 🚨</h2>";
-}
+// Polling data terbaru dari API setiap 3 detik
+setInterval(() => {
+  fetch('/api/sensor/latest')
+    .then(response => response.json())
+    .then(data => {
+      updateUI(data.gas_level, data.suhu, data.api_detected, data.apar_status);
+    })
+    .catch(err => console.error('Gagal mengambil data sensor:', err));
+}, 3000);
 
 function kirimWA() {
   let pesan = `🚨 LAPORAN DARURAT 🚨\nGas: ${gas} PPM\nSuhu: ${suhu}°C\nKebakaran: ${api ? "YA" : "TIDAK"}\nLokasi: ${lokasiText}`;
