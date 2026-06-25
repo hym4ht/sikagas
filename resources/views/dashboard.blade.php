@@ -302,9 +302,9 @@ function updateUI(gasVal, statusVal, aparVal, buzzerVal) {
 // Panggil updateUI pertama kali
 updateUI(gas, statusGas, aparAktif, buzzerAktif);
 
-// Polling data terbaru dari API setiap 1 detik
+// Polling data terbaru dari API setiap 1 detik (ditambah cache-buster agar tidak dicache browser)
 setInterval(() => {
-  fetch('/api/sensor/latest')
+  fetch('/api/sensor/latest?t=' + Date.now(), { cache: 'no-store' })
     .then(response => response.json())
     .then(data => {
       if (data) {
