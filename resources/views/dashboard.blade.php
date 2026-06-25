@@ -302,7 +302,7 @@ function updateUI(gasVal, statusVal, aparVal, buzzerVal) {
 // Panggil updateUI pertama kali
 updateUI(gas, statusGas, aparAktif, buzzerAktif);
 
-// Polling data terbaru dari API setiap 3 detik
+// Polling data terbaru dari API setiap 1 detik
 setInterval(() => {
   fetch('/api/sensor/latest')
     .then(response => response.json())
@@ -312,7 +312,7 @@ setInterval(() => {
       }
     })
     .catch(err => console.error('Gagal mengambil data sensor:', err));
-}, 3000);
+}, 1000);
 
 function kirimWA() {
   let pesan = `🚨 LAPORAN DARURAT 🚨\nGas: ${gas} PPM\nStatus: ${statusGas}\nAPAR: ${aparAktif ? "AKTIF" : "SIAP"}\nBuzzer: ${buzzerAktif ? "AKTIF" : "MATI"}\nLokasi: ${lokasiText}`;
