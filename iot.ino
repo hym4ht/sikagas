@@ -101,7 +101,7 @@ void setup() {
 }
 
 unsigned long lastKirim = 0;
-const unsigned long intervalKirim = 10000; // kirim ke web tiap 10 detik
+const unsigned long intervalKirim = 1000; // kirim ke web tiap 1 detik
 
 void loop() {
   int gasValue = analogRead(pinMQ2);
