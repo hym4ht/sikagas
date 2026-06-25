@@ -179,10 +179,26 @@
         </tr>
       </thead>
       <tbody>
-        {{-- Tambahkan data histori di sini --}}
-        <tr>
-          <td colspan="4" class="empty">Belum ada data histori</td>
-        </tr>
+        @forelse($logs as $log)
+          <tr>
+            <td>{{ $log->created_at->format('d-m-Y') }}</td>
+            <td>{{ $log->created_at->format('H:i:s') }}</td>
+            <td>Gas: {{ $log->gas_value }} | APAR: {{ $log->apar_aktif ? 'Aktif' : 'Mati' }} | Buzzer: {{ $log->buzzer_aktif ? 'Aktif' : 'Mati' }}</td>
+            <td>
+              @if($log->status === 'BAHAYA')
+                <span style="color: #dc2626; font-weight: bold;">BAHAYA 🚨</span>
+              @elseif($log->status === 'WASPADA')
+                <span style="color: #d97706; font-weight: bold;">WASPADA ⚠️</span>
+              @else
+                <span style="color: #059669; font-weight: bold;">AMAN ✅</span>
+              @endif
+            </td>
+          </tr>
+        @empty
+          <tr>
+            <td colspan="4" class="empty">Belum ada data histori</td>
+          </tr>
+        @endforelse
       </tbody>
     </table>
   </div>

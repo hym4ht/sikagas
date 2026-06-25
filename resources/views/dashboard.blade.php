@@ -221,9 +221,11 @@
 </main>
 
 <script>
-let gas = 120;
-let suhu = 27;
-let api = false;
+let gas = {{ $latestData->gas_value ?? 120 }};
+let statusGas = "{{ $latestData->status ?? 'AMAN' }}";
+let aparAktif = {{ ($latestData->apar_aktif ?? false) ? 'true' : 'false' }};
+let buzzerAktif = {{ ($latestData->buzzer_aktif ?? false) ? 'true' : 'false' }};
+let suhu = 27; // Database tidak mencatat suhu
 let lokasiText = "Tidak tersedia";
 
 if (navigator.geolocation) {
@@ -236,29 +238,84 @@ if (navigator.geolocation) {
   });
 }
 
-if (gas > 100) {
-  document.getElementById("statusGas").innerText = "BAHAYA";
-  document.getElementById("statusGas").classList.add("danger");
-  document.getElementById("notif").style.display = "block";
+function updateUI(gasVal, statusVal, aparVal, buzzerVal) {
+  gas = gasVal;
+  statusGas = statusVal;
+  aparAktif = aparVal;
+  buzzerAktif = buzzerVal;
+
+  document.getElementById("gas").innerHTML = `${gasVal} <span>PPM</span>`;
+
+  // Status Gas
+  const statusGasEl = document.getElementById("statusGas");
+  statusGasEl.innerText = statusVal;
+  if (statusVal === "BAHAYA" || statusVal === "WASPADA") {
+    statusGasEl.classList.add("danger");
+  } else {
+    statusGasEl.classList.remove("danger");
+  }
+
+  // Status Api (terdeteksi jika status WASPADA/BAHAYA)
+  const statusApiEl = document.getElementById("statusApi");
+  if (statusVal === "BAHAYA" || statusVal === "WASPADA") {
+    statusApiEl.innerText = "TERDETEKSI 🔥";
+    statusApiEl.classList.add("danger");
+  } else {
+    statusApiEl.innerText = "TIDAK ADA";
+    statusApiEl.classList.remove("danger");
+  }
+
+  // Status APAR
+  const statusAparEl = document.getElementById("statusApar");
+  if (aparVal) {
+    statusAparEl.innerText = "AKTIF 🧯";
+    statusAparEl.classList.add("danger");
+  } else {
+    statusAparEl.innerText = "SIAP";
+    statusAparEl.classList.remove("danger");
+  }
+
+  // Peringatan Notif & Status Box
+  const notifEl = document.getElementById("notif");
+  const statusBoxEl = document.getElementById("statusBox");
+
+  if (statusVal === "BAHAYA") {
+    notifEl.style.display = "block";
+    notifEl.innerText = "⚠️ Peringatan! Terjadi kebocoran gas BAHAYA / kebakaran!";
+    statusBoxEl.style.background = "#fee2e2";
+    statusBoxEl.style.color = "#b91c1c";
+    statusBoxEl.innerHTML = "<h2>BAHAYA TERDETEKSI 🚨</h2>";
+  } else if (statusVal === "WASPADA") {
+    notifEl.style.display = "block";
+    notifEl.innerText = "⚠️ Peringatan! Kadar gas WASPADA!";
+    statusBoxEl.style.background = "#fef3c7";
+    statusBoxEl.style.color = "#92400e";
+    statusBoxEl.innerHTML = "<h2>WASPADA KADAR GAS ⚠️</h2>";
+  } else {
+    notifEl.style.display = "none";
+    statusBoxEl.style.background = "#d1fae5";
+    statusBoxEl.style.color = "#065f46";
+    statusBoxEl.innerHTML = "Sistem Aman ✅";
+  }
 }
 
-if (api === true) {
-  document.getElementById("statusApi").innerText = "TERDETEKSI 🔥";
-  document.getElementById("statusApi").classList.add("danger");
-  document.getElementById("statusApar").innerText = "AKTIF 🧯";
-  document.getElementById("statusApar").classList.add("danger");
-  document.getElementById("notif").style.display = "block";
-}
+// Panggil updateUI pertama kali
+updateUI(gas, statusGas, aparAktif, buzzerAktif);
 
-if (gas > 100 || api === true) {
-  let box = document.getElementById("statusBox");
-  box.style.background = "#fee2e2";
-  box.style.color = "#b91c1c";
-  box.innerHTML = "<h2>BAHAYA TERDETEKSI 🚨</h2>";
-}
+// Polling data terbaru dari API setiap 3 detik
+setInterval(() => {
+  fetch('/api/sensor/latest')
+    .then(response => response.json())
+    .then(data => {
+      if (data) {
+        updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1);
+      }
+    })
+    .catch(err => console.error('Gagal mengambil data sensor:', err));
+}, 3000);
 
 function kirimWA() {
-  let pesan = `🚨 LAPORAN DARURAT 🚨\nGas: ${gas} PPM\nSuhu: ${suhu}°C\nKebakaran: ${api ? "YA" : "TIDAK"}\nLokasi: ${lokasiText}`;
+  let pesan = `🚨 LAPORAN DARURAT 🚨\nGas: ${gas} PPM\nStatus: ${statusGas}\nAPAR: ${aparAktif ? "AKTIF" : "SIAP"}\nBuzzer: ${buzzerAktif ? "AKTIF" : "MATI"}\nLokasi: ${lokasiText}`;
   let nomor = "6285290671398";
   window.open("https://wa.me/" + nomor + "?text=" + encodeURIComponent(pesan), '_blank');
 }

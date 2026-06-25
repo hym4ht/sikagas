@@ -3,16 +3,21 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SensorController;
 
+use App\Models\SensorData;
+
 Route::get('/', function () {
-    return view('dashboard');
+    $latestData = SensorData::latest()->first();
+    return view('dashboard', compact('latestData'));
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $latestData = SensorData::latest()->first();
+    return view('dashboard', compact('latestData'));
 })->name('dashboard');
 
 Route::get('/notifikasi', function () {
-    return view('notifikasi');
+    $logs = SensorData::latest()->take(50)->get();
+    return view('notifikasi', compact('logs'));
 })->name('notifikasi');
 
 Route::get('/apar', function () {
