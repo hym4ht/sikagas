@@ -95,31 +95,54 @@
 
   <div class="apar-card">
     <p>Status APAR</p>
-    <h1 id="aparStatus">AKTIF</h1>
-    <button id="toggleBtn" onclick="toggleAPAR()" class="btn-toggle btn-off">Matikan APAR</button>
+    <h1 id="aparStatus" class="{{ $aparControl === 'off' ? 'off' : '' }}">
+      {{ $aparControl === 'off' ? 'NONAKTIF' : 'AKTIF' }}
+    </h1>
+    <button id="toggleBtn" onclick="toggleAPAR()" class="btn-toggle {{ $aparControl === 'off' ? 'btn-on' : 'btn-off' }}">
+      {{ $aparControl === 'off' ? 'Aktifkan APAR' : 'Matikan APAR' }}
+    </button>
   </div>
 
 </main>
 
 <script>
-let aparOn = true;
+let aparOn = {{ $aparControl === 'on' ? 'true' : 'false' }};
 
 function toggleAPAR() {
-  aparOn = !aparOn;
-  const status = document.getElementById("aparStatus");
-  const btn = document.getElementById("toggleBtn");
+  const targetStatus = aparOn ? 'off' : 'on';
 
-  if (aparOn) {
-    status.textContent = "AKTIF";
-    status.classList.remove("off");
-    btn.textContent = "Matikan APAR";
-    btn.className = "btn-toggle btn-off";
-  } else {
-    status.textContent = "NONAKTIF";
-    status.classList.add("off");
-    btn.textContent = "Aktifkan APAR";
-    btn.className = "btn-toggle btn-on";
-  }
+  fetch('/api/apar/toggle', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify({ status: targetStatus })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      aparOn = (targetStatus === 'on');
+      const status = document.getElementById("aparStatus");
+      const btn = document.getElementById("toggleBtn");
+
+      if (aparOn) {
+        status.textContent = "AKTIF";
+        status.classList.remove("off");
+        btn.textContent = "Matikan APAR";
+        btn.className = "btn-toggle btn-off";
+      } else {
+        status.textContent = "NONAKTIF";
+        status.classList.add("off");
+        btn.textContent = "Aktifkan APAR";
+        btn.className = "btn-toggle btn-on";
+      }
+    }
+  })
+  .catch(err => {
+    console.error('Gagal memperbarui status APAR:', err);
+    alert('Gagal berkomunikasi dengan server.');
+  });
 }
 </script>
 </body>

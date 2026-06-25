@@ -20,8 +20,11 @@ Route::get('/notifikasi', function () {
     return view('notifikasi', compact('logs'));
 })->name('notifikasi');
 
+use Illuminate\Support\Facades\Cache;
+
 Route::get('/apar', function () {
-    return view('apar');
+    $aparControl = Cache::get('apar_control', 'on');
+    return view('apar', compact('aparControl'));
 })->name('apar');
 
 Route::get('/contact', function () {
@@ -32,3 +35,4 @@ Route::get('/contact', function () {
 Route::post('/api/sensor', [SensorController::class, 'store']);
 Route::get('/api/sensor/latest', [SensorController::class, 'latest']);
 Route::get('/api/sensor/history', [SensorController::class, 'history']);
+Route::post('/api/apar/toggle', [SensorController::class, 'toggleApar']);

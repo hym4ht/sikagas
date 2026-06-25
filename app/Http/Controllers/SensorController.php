@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\SensorData;
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\Cache;
+
 class SensorController extends Controller
 {
     /**
@@ -27,7 +29,10 @@ class SensorController extends Controller
             'buzzer_aktif' => $request->buzzer_aktif ?? false,
         ]);
 
-        return response()->json(['success' => true], 200);
+        return response()->json([
+            'success' => true,
+            'apar_control' => Cache::get('apar_control', 'on')
+        ], 200);
     }
 
     /**
@@ -37,7 +42,17 @@ class SensorController extends Controller
     public function latest()
     {
         $data = SensorData::latest()->first();
-        return response()->json($data);
+        
+        $response = $data ? $data->toArray() : [
+            'gas_value' => 120,
+            'status' => 'AMAN',
+            'apar_aktif' => false,
+            'buzzer_aktif' => false,
+        ];
+        
+        $response['apar_control'] = Cache::get('apar_control', 'on');
+        
+        return response()->json($response);
     }
 
     /**
@@ -59,5 +74,23 @@ class SensorController extends Controller
         }
 
         return response()->json($query->paginate(50));
+    }
+
+    /**
+     * Mengatur status APAR dari Web
+     * Endpoint: POST /api/apar/toggle
+     */
+    public function toggleApar(Request $request)
+    {
+        $request->validate([
+            'status' => 'required|string|in:on,off',
+        ]);
+
+        Cache::put('apar_control', $request->status);
+
+        return response()->json([
+            'success' => true,
+            'status' => $request->status
+        ]);
     }
 }
