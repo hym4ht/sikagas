@@ -1,28 +1,20 @@
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <UniversalTelegramBot.h>
 #include <HTTPClient.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-#define BOTtoken "8359333967:AAFKqigSE90QIzwMJdPr_gP0qBv_7rzY4u0"
-#define CHAT_ID  "8825910188"
-
-const char* ssid     = "Langka sandine";
-const char* password = "11223344";
+const char* ssid      = "sikagas";
+const char* password  = "12345678";
 
 // ===== DOMAIN WEB =====
 const char* serverURL = "https://sikagas.web.id/api/sensor";
-
-WiFiClientSecure client;
-UniversalTelegramBot bot(BOTtoken, client);
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 const int pinMQ2      = 34;
 const int pinBuzzerLED = 27;
 const int pinRelay    = 26;
-const int pinSolenoid = 33;
+const int pinMotorDC = 33;
 
 int batasBahaya  = 2300;
 int batasWaspada = 1500;
@@ -57,11 +49,11 @@ void setup() {
   pinMode(pinMQ2, INPUT);
   pinMode(pinBuzzerLED, OUTPUT);
   pinMode(pinRelay, OUTPUT);
-  pinMode(pinSolenoid, OUTPUT);
+  pinMode(pinMotorDC, OUTPUT);
 
   digitalWrite(pinBuzzerLED, LOW);
   digitalWrite(pinRelay, LOW);
-  digitalWrite(pinSolenoid, LOW);
+  digitalWrite(pinMotorDC, LOW);
 
   lcd.init();
   lcd.backlight();
@@ -72,7 +64,6 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
   int timeout = 0;
   while (WiFi.status() != WL_CONNECTED && timeout < 20) {
@@ -84,7 +75,6 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\nWiFi Connected!");
     Serial.println("IP: " + WiFi.localIP().toString());
-    bot.sendMessage(CHAT_ID, "✅ APAR Otomatis Online!", "");
     lcd.setCursor(0, 1);
     lcd.print("  Pemanasan...  ");
     delay(30000);
@@ -119,7 +109,7 @@ void loop() {
 
     digitalWrite(pinBuzzerLED, HIGH);
     digitalWrite(pinRelay, HIGH);
-    digitalWrite(pinSolenoid, HIGH);
+    digitalWrite(pinMotorDC, HIGH);
 
     lcd.setCursor(0, 0);
     lcd.print("!!!! BAHAYA GAS !!");
@@ -127,11 +117,8 @@ void loop() {
     lcd.print("   APAR AKTIF    ");
 
     if (!statusBahayaTerkirim) {
-      String pesan = "🚨 BAHAYA! GAS LPG BOCOR! 🚨\n";
-      pesan += "Kadar Gas: " + String(gasValue) + "\n";
-      pesan += "APAR OTOMATIS SUDAH DIAKTIFKAN!";
-      bot.sendMessage(CHAT_ID, pesan, "");
       statusBahayaTerkirim = true;
+      // Notifikasi dikirim oleh backend saat menerima status BAHAYA
     }
 
   } else if (gasValue > batasWaspada) {
@@ -141,7 +128,7 @@ void loop() {
     buzzerAktif  = true;
 
     digitalWrite(pinRelay, HIGH);
-    digitalWrite(pinSolenoid, LOW);
+    digitalWrite(pinMotorDC, LOW);
     digitalWrite(pinBuzzerLED, (millis() / 400) % 2);
 
     lcd.setCursor(0, 0);
@@ -159,7 +146,7 @@ void loop() {
 
     digitalWrite(pinBuzzerLED, LOW);
     digitalWrite(pinRelay, LOW);
-    digitalWrite(pinSolenoid, LOW);
+    digitalWrite(pinMotorDC, LOW);
 
     lcd.setCursor(0, 0);
     lcd.print("  STATUS: AMAN   ");

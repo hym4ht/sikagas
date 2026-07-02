@@ -34,6 +34,20 @@
     }
     .nav-links a:hover { background: #f3f4f6; color: #111827; }
     .nav-links a.active { background: #1f2937; color: #fff; }
+    .btn-logout {
+      background: none;
+      border: none;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #6b7280;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Poppins', sans-serif;
+      white-space: nowrap;
+    }
+    .btn-logout:hover { background: #f3f4f6; color: #111827; }
 
     main { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem; }
 
@@ -133,6 +147,10 @@
     <a href="{{ route('dashboard') }}">Dashboard</a>
     <a href="{{ route('notifikasi') }}" class="active">Notifikasi</a>
     <a href="{{ route('apar') }}">Kontrol APAR</a>
+    <form action="{{ route('logout') }}" method="POST" style="display: inline;">
+      @csrf
+      <button type="submit" class="btn-logout">Keluar</button>
+    </form>
   </div>
 </nav>
 
