@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
@@ -7,26 +8,32 @@ const char* ssid      = "sikagas";
 const char* password  = "12345678";
 
 // ===== DOMAIN WEB =====
-const char* serverURL = "https://sikagas.web.id/api/sensor";
+const char* serverURL      = "https://sikagas.web.id/api/sensor";
+const char* aparCommandURL = "https://sikagas.web.id/api/apar/command";
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-const int pinMQ2      = 34;
+const int pinMQ2       = 34;
 const int pinBuzzerLED = 27;
-const int pinRelay    = 26;
-const int pinMotorDC = 33;
+const int pinRelay     = 26;
+const int pinMotorDC   = 33;
 
-int batasBahaya  = 2300;
-int batasWaspada = 1500;
+int  batasBahaya  = 2300;
+int  batasWaspada = 1500;
 bool statusBahayaTerkirim = false;
 
-// Kirim data ke web server
+// Perintah manual terakhir dari web ("ON" / "OFF")
+String perintahManual = "OFF";
+
+// ============================================================
+// Kirim data sensor ke backend
+// ============================================================
 void kirimKeWeb(int gasValue, String status, bool aparAktif, bool buzzerAktif) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
   WiFiClientSecure secureClient;
-  secureClient.setInsecure(); // skip SSL verify (untuk development)
+  secureClient.setInsecure(); // skip SSL verify (development)
 
   http.begin(secureClient, serverURL);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -38,10 +45,45 @@ void kirimKeWeb(int gasValue, String status, bool aparAktif, bool buzzerAktif) {
                  + "&buzzer_aktif=" + (buzzerAktif ? "1" : "0");
 
   int httpCode = http.POST(payload);
-  Serial.println("HTTP Response: " + String(httpCode));
+  Serial.println("HTTP Sensor Response: " + String(httpCode));
   http.end();
 }
 
+// ============================================================
+// Polling perintah APAR dari backend
+// ============================================================
+void ambilPerintahApar() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  HTTPClient http;
+  WiFiClientSecure secureClient;
+  secureClient.setInsecure();
+
+  http.begin(secureClient, aparCommandURL);
+  http.addHeader("Accept", "application/json");
+
+  int httpCode = http.GET();
+
+  if (httpCode == 200) {
+    String body = http.getString();
+    Serial.println("APAR Command Response: " + body);
+
+    // Parse JSON sederhana: cari nilai "command":"ON" atau "command":"OFF"
+    if (body.indexOf("\"ON\"") != -1) {
+      perintahManual = "ON";
+    } else {
+      perintahManual = "OFF";
+    }
+  } else {
+    Serial.println("Gagal ambil perintah APAR, HTTP: " + String(httpCode));
+  }
+
+  http.end();
+}
+
+// ============================================================
+// Setup
+// ============================================================
 void setup() {
   Serial.begin(115200);
   Wire.begin(21, 22);
@@ -90,19 +132,37 @@ void setup() {
   lcd.clear();
 }
 
-unsigned long lastKirim = 0;
-const unsigned long intervalKirim = 1000; // kirim ke web tiap 1 detik
+// ============================================================
+// Timer
+// ============================================================
+unsigned long lastKirim        = 0;
+unsigned long lastAmbilPerintah = 0;
 
+const unsigned long intervalKirim        = 1000;  // kirim sensor tiap 1 detik
+const unsigned long intervalAmbilPerintah = 5000;  // polling perintah tiap 5 detik
+
+// ============================================================
+// Loop Utama
+// ============================================================
 void loop() {
+  unsigned long now = millis();
+
+  // --- Polling perintah dari web ---
+  if (now - lastAmbilPerintah >= intervalAmbilPerintah) {
+    ambilPerintahApar();
+    lastAmbilPerintah = now;
+  }
+
+  // --- Baca sensor gas ---
   int gasValue = analogRead(pinMQ2);
-  Serial.println("Gas: " + String(gasValue));
+  Serial.println("Gas: " + String(gasValue) + " | Perintah: " + perintahManual);
 
   String statusSensor;
   bool aparAktif   = false;
   bool buzzerAktif = false;
 
   if (gasValue > batasBahaya) {
-    // ===== BAHAYA =====
+    // ===== BAHAYA — sensor override segalanya =====
     statusSensor = "BAHAYA";
     aparAktif    = true;
     buzzerAktif  = true;
@@ -118,17 +178,24 @@ void loop() {
 
     if (!statusBahayaTerkirim) {
       statusBahayaTerkirim = true;
-      // Notifikasi dikirim oleh backend saat menerima status BAHAYA
     }
 
   } else if (gasValue > batasWaspada) {
     // ===== WASPADA =====
     statusSensor = "WASPADA";
-    aparAktif    = false;
     buzzerAktif  = true;
 
-    digitalWrite(pinRelay, HIGH);
-    digitalWrite(pinMotorDC, LOW);
+    // Perintah manual ON → aktifkan relay+motor walau waspada
+    if (perintahManual == "ON") {
+      aparAktif = true;
+      digitalWrite(pinRelay, HIGH);
+      digitalWrite(pinMotorDC, HIGH);
+    } else {
+      aparAktif = false;
+      digitalWrite(pinRelay, HIGH);  // relay tetap aktif di waspada (blower/ventilasi)
+      digitalWrite(pinMotorDC, LOW);
+    }
+
     digitalWrite(pinBuzzerLED, (millis() / 400) % 2);
 
     lcd.setCursor(0, 0);
@@ -139,27 +206,45 @@ void loop() {
     statusBahayaTerkirim = false;
 
   } else {
-    // ===== AMAN =====
+    // ===== AMAN — ikuti perintah manual =====
     statusSensor = "AMAN";
-    aparAktif    = false;
-    buzzerAktif  = false;
 
-    digitalWrite(pinBuzzerLED, LOW);
-    digitalWrite(pinRelay, LOW);
-    digitalWrite(pinMotorDC, LOW);
+    if (perintahManual == "ON") {
+      // Manual ON: aktifkan APAR walau sensor aman
+      aparAktif    = true;
+      buzzerAktif  = false;
 
-    lcd.setCursor(0, 0);
-    lcd.print("  STATUS: AMAN   ");
-    lcd.setCursor(0, 1);
-    lcd.print("Gas: "); lcd.print(gasValue); lcd.print("   ");
+      digitalWrite(pinBuzzerLED, LOW);
+      digitalWrite(pinRelay, HIGH);
+      digitalWrite(pinMotorDC, HIGH);
+
+      lcd.setCursor(0, 0);
+      lcd.print("  APAR: MANUAL  ");
+      lcd.setCursor(0, 1);
+      lcd.print("Gas: "); lcd.print(gasValue); lcd.print("   ");
+
+    } else {
+      // Manual OFF + sensor aman → semua mati
+      aparAktif    = false;
+      buzzerAktif  = false;
+
+      digitalWrite(pinBuzzerLED, LOW);
+      digitalWrite(pinRelay, LOW);
+      digitalWrite(pinMotorDC, LOW);
+
+      lcd.setCursor(0, 0);
+      lcd.print("  STATUS: AMAN   ");
+      lcd.setCursor(0, 1);
+      lcd.print("Gas: "); lcd.print(gasValue); lcd.print("   ");
+    }
 
     statusBahayaTerkirim = false;
   }
 
-  // Kirim ke web setiap 10 detik
-  if (millis() - lastKirim >= intervalKirim) {
+  // --- Kirim data sensor ke web ---
+  if (now - lastKirim >= intervalKirim) {
     kirimKeWeb(gasValue, statusSensor, aparAktif, buzzerAktif);
-    lastKirim = millis();
+    lastKirim = now;
   }
 
   delay(500);
