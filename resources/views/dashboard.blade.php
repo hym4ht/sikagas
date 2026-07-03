@@ -1,364 +1,252 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard | Sistem Monitoring Gas</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<x-layout title="Dashboard">
 
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: #f0f2f5;
-      color: #374151;
-      min-height: 100vh;
-    }
+  <x-slot name="head">
+    <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
+    <style>
+      /* STATUS BOX */
+      .status-banner {
+        border-radius: var(--radius);
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid;
+        transition: all 0.4s ease;
+      }
+      .status-banner.aman   { background: rgba(16,185,129,.1);  border-color: rgba(16,185,129,.25);  }
+      .status-banner.waspada{ background: rgba(245,158,11,.1);  border-color: rgba(245,158,11,.25);  }
+      .status-banner.bahaya { background: rgba(239,68,68,.12);  border-color: rgba(239,68,68,.3);    }
 
-    /* NAVBAR */
-    nav {
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 0 1rem;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
+      .status-banner .s-icon { font-size: 2rem; flex-shrink: 0; }
+      .status-banner .s-label { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+      .status-banner .s-title { font-size: 1.1rem; font-weight: 700; color: #fff; }
 
-    .nav-brand {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #111827;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
+      /* METRIC CARD */
+      .metric-card {
+        padding: 1.25rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .metric-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(249,115,22,.04) 0%, transparent 60%);
+        pointer-events: none;
+      }
+      .metric-card .m-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+      .metric-card .m-value { font-size: 2rem; font-weight: 800; color: #fff; line-height: 1; }
+      .metric-card .m-unit  { font-size: 0.85rem; font-weight: 500; color: var(--muted); margin-left: 4px; }
+      .metric-card .m-icon  { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; opacity: 0.6; }
 
-    .nav-links {
-      display: flex;
-      gap: 4px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      flex-shrink: 1;
-    }
-    .nav-links::-webkit-scrollbar { display: none; }
+      /* STATUS DETAIL */
+      .status-pill {
+        padding: 1rem;
+        text-align: center;
+      }
+      .status-pill .sp-label { font-size: 0.68rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+      .status-pill .sp-val   { font-size: 0.9rem; font-weight: 700; color: var(--green); }
+      .status-pill .sp-val.danger { color: #f87171; }
+      .status-pill .sp-val.warn   { color: #fbbf24; }
 
-    .nav-links a {
-      text-decoration: none;
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: #6b7280;
-      padding: 6px 10px;
-      border-radius: 8px;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-    .nav-links a:hover { background: #f3f4f6; color: #111827; }
-    .nav-links a.active { background: #1f2937; color: #fff; }
-    .btn-logout {
-      background: none;
-      border: none;
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: #6b7280;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: 'Poppins', sans-serif;
-      white-space: nowrap;
-    }
-    .btn-logout:hover { background: #f3f4f6; color: #111827; }
+      /* LOKASI */
+      .lokasi-bar {
+        padding: 0.9rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        font-size: 0.82rem;
+      }
+      .lokasi-bar .lok-icon { font-size: 1rem; }
+      .lokasi-bar .lok-label { color: var(--muted); }
+      .lokasi-bar a { color: var(--accent); text-decoration: none; }
+      .lokasi-bar a:hover { text-decoration: underline; }
 
-    /* CONTENT */
-    main { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem; }
+      /* ALERT */
+      .alert-box {
+        display: none;
+        padding: 0.9rem 1.25rem;
+        border-radius: var(--radius);
+        margin-bottom: 1rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        background: rgba(239,68,68,.12);
+        border: 1px solid rgba(239,68,68,.3);
+        color: #f87171;
+        animation: blink-alert 1.5s ease-in-out infinite;
+      }
+      @keyframes blink-alert {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
 
-    /* STATUS BOX */
-    #statusBox {
-      background: #d1fae5;
-      color: #065f46;
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      text-align: center;
-      margin-bottom: 1.25rem;
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
+      /* ACTION BUTTONS */
+      .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-    /* GRID 2 COL */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
-    .grid-btn { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      @media (max-width: 600px) {
+        .metric-card .m-value { font-size: 1.6rem; }
+      }
+    </style>
+  </x-slot>
 
-    /* CARD */
-    .card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1.1rem 1.25rem;
-    }
-
-    .card .label { font-size: 0.78rem; color: #9ca3af; margin-bottom: 0.4rem; }
-    .card .value { font-size: 1.5rem; font-weight: 700; color: #111827; }
-    .card .value span { font-size: 0.9rem; font-weight: 500; color: #9ca3af; }
-
-    /* STATUS CARDS */
-    .status-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1rem 1.1rem;
-      text-align: center;
-    }
-    .status-card .label { font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.5rem; }
-    .status-card .val { font-size: 0.85rem; font-weight: 700; color: #059669; }
-    .status-card .val.danger { color: #dc2626; }
-
-    /* LOKASI */
-    .lokasi-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.25rem;
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-    .lokasi-card #lokasi { color: #111827; font-weight: 500; }
-    .lokasi-card #lokasi a { color: #2563eb; text-decoration: none; }
-
-    /* NOTIF */
-    #notif {
-      display: none;
-      background: #fee2e2;
-      border: 1px solid #fca5a5;
-      border-radius: 10px;
-      padding: 0.85rem 1.25rem;
-      margin-bottom: 1.25rem;
-      color: #b91c1c;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-align: center;
-    }
-
-    /* BUTTONS */
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      font-family: 'Poppins', sans-serif;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .btn:hover { opacity: 0.85; }
-    .btn-green { background: #059669; color: #fff; }
-    .btn-red { background: #dc2626; color: #fff; }
-
-    @media (max-width: 580px) {
-      .grid-2, .grid-btn { grid-template-columns: 1fr; }
-      .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-      .card .value { font-size: 1.3rem; }
-      #statusBox { font-size: 0.875rem; padding: 0.85rem 1rem; }
-    }
-    @media (max-width: 360px) {
-      .grid-3 { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-
-<nav>
-  <span class="nav-brand">🔥 Monitoring Gas</span>
-  <div class="nav-links">
-    <a href="{{ route('dashboard') }}" class="active">Dashboard</a>
-    <a href="{{ route('notifikasi') }}">Notifikasi</a>
-    <a href="{{ route('apar') }}">Kontrol APAR</a>
-    <form action="{{ route('logout') }}" method="POST" style="display: inline;">
-      @csrf
-      <button type="submit" class="btn-logout">Keluar</button>
-    </form>
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Monitoring realtime sistem keamanan gas LPG</p>
   </div>
-</nav>
 
-<main>
-
-  <!-- STATUS -->
-  <div id="statusBox">Sistem Aman ✅</div>
-
-  <!-- DATA GAS & SUHU -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="label">Gas Level</div>
-      <div class="value" id="gas">120 <span>PPM</span></div>
-    </div>
-    <div class="card">
-      <div class="label">Suhu</div>
-      <div class="value" id="suhu">27 <span>°C</span></div>
+  <!-- STATUS BANNER -->
+  <div id="statusBanner" class="status-banner aman">
+    <div class="s-icon">✅</div>
+    <div>
+      <div class="s-label">Status Sistem</div>
+      <div class="s-title" id="statusTitle">Sistem Aman</div>
     </div>
   </div>
 
-  <!-- STATUS DETAIL -->
-  <div class="grid-3">
-    <div class="status-card">
-      <div class="label">Gas</div>
-      <div class="val" id="statusGas">AMAN</div>
+  <!-- ALERT -->
+  <div id="alertBox" class="alert-box">⚠️ Peringatan! Terjadi kebocoran gas / kebakaran!</div>
+
+  <!-- METRIC CARDS -->
+  <div style="margin-bottom: 1rem;">
+    <div class="glass-card metric-card">
+      <div class="m-icon">💨</div>
+      <div class="m-label">Gas Level</div>
+      <div class="m-value" id="gas">120<span class="m-unit">PPM</span></div>
     </div>
-    <div class="status-card">
-      <div class="label">Api</div>
-      <div class="val" id="statusApi">TIDAK ADA</div>
+  </div>
+
+  <!-- STATUS DETAIL PILLS -->
+  <div class="grid-3" style="margin-bottom: 1rem;">
+    <div class="glass-card status-pill">
+      <div class="sp-label">Gas</div>
+      <div class="sp-val" id="statusGas">AMAN</div>
     </div>
-    <div class="status-card">
-      <div class="label">APAR</div>
-      <div class="val" id="statusApar">SIAP</div>
+    <div class="glass-card status-pill">
+      <div class="sp-label">Api</div>
+      <div class="sp-val" id="statusApi">TIDAK ADA</div>
+    </div>
+    <div class="glass-card status-pill">
+      <div class="sp-label">APAR</div>
+      <div class="sp-val" id="statusApar">SIAP</div>
     </div>
   </div>
 
   <!-- LOKASI -->
-  <div class="lokasi-card">
-    Lokasi Rumah: <span id="lokasi">Mengambil lokasi...</span>
+  <div class="glass-card lokasi-bar" style="margin-bottom: 1rem;">
+    <span class="lok-icon">📍</span>
+    <span class="lok-label">Lokasi:</span>
+    <span id="lokasi">Mengambil lokasi...</span>
   </div>
 
-  <!-- NOTIF -->
-  <div id="notif">⚠️ Peringatan! Terjadi kebocoran gas / kebakaran!</div>
-
-  <!-- BUTTONS -->
-  <div class="grid-btn">
-    <button onclick="kirimWA()" class="btn btn-green">💬 WhatsApp</button>
-    <a href="tel:113" class="btn btn-red">📞 Telepon 113</a>
+  <!-- ACTION BUTTONS -->
+  <div class="action-grid">
+    <button onclick="kirimWA()" class="btn btn-success">
+      💬 Kirim WhatsApp
+    </button>
+    <a href="tel:113" class="btn btn-danger">
+      📞 Hubungi 113
+    </a>
   </div>
 
-</main>
+  <x-slot name="scripts">
+    <script>
+    let gas = {{ $latestData->gas_value ?? 120 }};
+    let statusGas = "{{ $latestData->status ?? 'AMAN' }}";
+    let aparAktif = {{ ($latestData->apar_aktif ?? false) ? 'true' : 'false' }};
+    let buzzerAktif = {{ ($latestData->buzzer_aktif ?? false) ? 'true' : 'false' }};
+    let lokasiText = "Tidak tersedia";
 
-<script>
-let gas = {{ $latestData->gas_value ?? 120 }};
-let statusGas = "{{ $latestData->status ?? 'AMAN' }}";
-let aparAktif = {{ ($latestData->apar_aktif ?? false) ? 'true' : 'false' }};
-let buzzerAktif = {{ ($latestData->buzzer_aktif ?? false) ? 'true' : 'false' }};
-let suhu = 27; // Database tidak mencatat suhu
-let lokasiText = "Tidak tersedia";
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        let lat = pos.coords.latitude;
+        let lon = pos.coords.longitude;
+        lokasiText = `https://maps.google.com/?q=${lat},${lon}`;
+        document.getElementById("lokasi").innerHTML =
+          `<a href="${lokasiText}" target="_blank">📍 Lihat di Google Maps</a>`;
+      });
+    }
 
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    let lat = pos.coords.latitude;
-    let lon = pos.coords.longitude;
-    lokasiText = `https://maps.google.com/?q=${lat},${lon}`;
-    document.getElementById("lokasi").innerHTML =
-      `<a href="${lokasiText}" target="_blank">Lihat Lokasi</a>`;
-  });
-}
+    function updateUI(gasVal, statusVal, aparVal, buzzerVal) {
+      gas = gasVal; statusGas = statusVal; aparAktif = aparVal; buzzerAktif = buzzerVal;
 
-function updateUI(gasVal, statusVal, aparVal, buzzerVal) {
-  gas = gasVal;
-  statusGas = statusVal;
-  aparAktif = aparVal;
-  buzzerAktif = buzzerVal;
+      document.getElementById("gas").innerHTML = `${gasVal}<span class="m-unit">PPM</span>`;
 
-  document.getElementById("gas").innerHTML = `${gasVal} <span>PPM</span>`;
+      const banner   = document.getElementById("statusBanner");
+      const title    = document.getElementById("statusTitle");
+      const alertBox = document.getElementById("alertBox");
+      const sGas     = document.getElementById("statusGas");
+      const sApi     = document.getElementById("statusApi");
+      const sApar    = document.getElementById("statusApar");
 
-  // Status Gas
-  const statusGasEl = document.getElementById("statusGas");
-  statusGasEl.innerText = statusVal;
-  if (statusVal === "BAHAYA" || statusVal === "WASPADA") {
-    statusGasEl.classList.add("danger");
-  } else {
-    statusGasEl.classList.remove("danger");
-  }
+      // Gas badge
+      sGas.textContent = statusVal;
+      sGas.className = "sp-val";
+      if (statusVal === "BAHAYA") sGas.classList.add("danger");
+      else if (statusVal === "WASPADA") sGas.classList.add("warn");
 
-  // Status Api (terdeteksi jika status WASPADA/BAHAYA)
-  const statusApiEl = document.getElementById("statusApi");
-  if (statusVal === "BAHAYA" || statusVal === "WASPADA") {
-    statusApiEl.innerText = "TERDETEKSI 🔥";
-    statusApiEl.classList.add("danger");
-  } else {
-    statusApiEl.innerText = "TIDAK ADA";
-    statusApiEl.classList.remove("danger");
-  }
+      // Api badge
+      if (statusVal === "BAHAYA" || statusVal === "WASPADA") {
+        sApi.textContent = "TERDETEKSI 🔥"; sApi.className = "sp-val danger";
+      } else {
+        sApi.textContent = "TIDAK ADA"; sApi.className = "sp-val";
+      }
 
-  // Status APAR
-  const statusAparEl = document.getElementById("statusApar");
-  if (aparVal) {
-    statusAparEl.innerText = "AKTIF 🧯";
-    statusAparEl.classList.add("danger");
-  } else {
-    statusAparEl.innerText = "SIAP";
-    statusAparEl.classList.remove("danger");
-  }
+      // APAR badge
+      if (aparVal) {
+        sApar.textContent = "AKTIF 🧯"; sApar.className = "sp-val danger";
+      } else {
+        sApar.textContent = "SIAP"; sApar.className = "sp-val";
+      }
 
-  // Peringatan Notif & Status Box
-  const notifEl = document.getElementById("notif");
-  const statusBoxEl = document.getElementById("statusBox");
+      // Banner
+      banner.className = "status-banner";
+      if (statusVal === "BAHAYA") {
+        banner.classList.add("bahaya");
+        document.querySelector("#statusBanner .s-icon").textContent = "🚨";
+        title.textContent = "BAHAYA TERDETEKSI!";
+        alertBox.style.display = "block";
+        alertBox.textContent = "⚠️ BAHAYA! Kebocoran gas terdeteksi!";
+      } else if (statusVal === "WASPADA") {
+        banner.classList.add("waspada");
+        document.querySelector("#statusBanner .s-icon").textContent = "⚠️";
+        title.textContent = "Kadar Gas Meningkat";
+        alertBox.style.display = "block";
+        alertBox.textContent = "⚠️ WASPADA! Kadar gas melebihi batas normal.";
+      } else {
+        banner.classList.add("aman");
+        document.querySelector("#statusBanner .s-icon").textContent = "✅";
+        title.textContent = "Sistem Aman";
+        alertBox.style.display = "none";
+      }
+    }
 
-  if (statusVal === "BAHAYA") {
-    notifEl.style.display = "block";
-    notifEl.innerText = "⚠️ Peringatan! Terjadi kebocoran gas BAHAYA / kebakaran!";
-    statusBoxEl.style.background = "#fee2e2";
-    statusBoxEl.style.color = "#b91c1c";
-    statusBoxEl.innerHTML = "<h2>BAHAYA TERDETEKSI 🚨</h2>";
-  } else if (statusVal === "WASPADA") {
-    notifEl.style.display = "block";
-    notifEl.innerText = "⚠️ Peringatan! Kadar gas WASPADA!";
-    statusBoxEl.style.background = "#fef3c7";
-    statusBoxEl.style.color = "#92400e";
-    statusBoxEl.innerHTML = "<h2>WASPADA KADAR GAS ⚠️</h2>";
-  } else {
-    notifEl.style.display = "none";
-    statusBoxEl.style.background = "#d1fae5";
-    statusBoxEl.style.color = "#065f46";
-    statusBoxEl.innerHTML = "Sistem Aman ✅";
-  }
-}
+    updateUI(gas, statusGas, aparAktif, buzzerAktif);
 
-// Panggil updateUI pertama kali
-updateUI(gas, statusGas, aparAktif, buzzerAktif);
+    const pusherKey = "{{ env('PUSHER_APP_KEY') }}";
+    const pusherCluster = "{{ env('PUSHER_APP_CLUSTER', 'ap1') }}";
+    if (pusherKey) {
+      const pusher = new Pusher(pusherKey, { cluster: pusherCluster, forceTLS: true });
+      const channel = pusher.subscribe('sensor-channel');
+      channel.bind('SensorDataUpdated', function(data) {
+        updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1);
+      });
+    } else {
+      setInterval(() => {
+        fetch('/api/sensor/latest?t=' + Date.now(), { cache: 'no-store' })
+          .then(r => r.json())
+          .then(data => { if (data) updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1); })
+          .catch(e => console.error(e));
+      }, 3000);
+    }
 
-// Inisialisasi Pusher
-const pusherKey = "{{ env('PUSHER_APP_KEY') }}";
-const pusherCluster = "{{ env('PUSHER_APP_CLUSTER', 'ap1') }}";
+    function kirimWA() {
+      let pesan = `🚨 LAPORAN DARURAT 🚨\nGas: ${gas} PPM\nStatus: ${statusGas}\nAPAR: ${aparAktif ? "AKTIF" : "SIAP"}\nBuzzer: ${buzzerAktif ? "AKTIF" : "MATI"}\nLokasi: ${lokasiText}`;
+      window.open("https://wa.me/6285290671398?text=" + encodeURIComponent(pesan), '_blank');
+    }
+    </script>
+  </x-slot>
 
-if (pusherKey) {
-  // Aktifkan logging Pusher untuk membantu debugging (opsional, bisa dinonaktifkan di prod)
-  Pusher.logToConsole = true;
-
-  const pusher = new Pusher(pusherKey, {
-    cluster: pusherCluster,
-    forceTLS: true
-  });
-
-  const channel = pusher.subscribe('sensor-channel');
-  channel.bind('SensorDataUpdated', function(data) {
-    console.log('Menerima update sensor via WebSocket:', data);
-    updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1);
-  });
-} else {
-  console.warn('Pusher Key belum dikonfigurasi. Menggunakan fallback polling 3 detik...');
-  // Fallback Polling 3 detik jika Pusher belum disetup
-  setInterval(() => {
-    fetch('/api/sensor/latest?t=' + Date.now(), { cache: 'no-store' })
-      .then(response => response.json())
-      .then(data => {
-        if (data) {
-          updateUI(data.gas_value, data.status, data.apar_aktif == 1, data.buzzer_aktif == 1);
-        }
-      })
-      .catch(err => console.error('Gagal mengambil data sensor:', err));
-  }, 3000);
-}
-
-function kirimWA() {
-  let pesan = `🚨 LAPORAN DARURAT 🚨\nGas: ${gas} PPM\nStatus: ${statusGas}\nAPAR: ${aparAktif ? "AKTIF" : "SIAP"}\nBuzzer: ${buzzerAktif ? "AKTIF" : "MATI"}\nLokasi: ${lokasiText}`;
-  let nomor = "6285290671398";
-  window.open("https://wa.me/" + nomor + "?text=" + encodeURIComponent(pesan), '_blank');
-}
-</script>
-</body>
-</html>
+</x-layout>

@@ -1,198 +1,142 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard | Sistem Monitoring Gas</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<x-layout title="Kontak Darurat">
+  <x-slot name="head">
+    <style>
+      /* WARNING BANNER */
+      #warningBanner {
+        display: none;
+        border-radius: var(--radius);
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 1px solid rgba(239,68,68,.3);
+        background: rgba(239,68,68,.1);
+        animation: blink-alert 1.5s ease-in-out infinite;
+      }
+      @keyframes blink-alert {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.65; }
+      }
+      #warningBanner .w-icon { font-size: 2rem; }
+      #warningBanner .w-text { font-size: 0.9rem; font-weight: 700; color: #f87171; }
+      #warningBanner .w-sub  { font-size: 0.75rem; color: #fca5a5; margin-top: 2px; }
+      #warningBanner.hidden  { display: none; }
+      #warningBanner.visible { display: flex; }
 
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: #f0f2f5;
-      color: #374151;
-      min-height: 100vh;
-    }
+      /* INFO CARDS */
+      .info-pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .info-item {
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .info-item .i-label { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+      .info-item .i-value { font-size: 1.2rem; font-weight: 700; color: #fff; }
 
-    nav {
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 0 1rem;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-    .nav-brand { font-size: 0.9rem; font-weight: 600; color: #111827; white-space: nowrap; flex-shrink: 0; }
-    .nav-links { display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 1; }
-    .nav-links::-webkit-scrollbar { display: none; }
-    .nav-links a {
-      text-decoration: none; font-size: 0.78rem; font-weight: 500;
-      color: #6b7280; padding: 6px 10px; border-radius: 8px; transition: all 0.15s; white-space: nowrap;
-    }
-    .nav-links a:hover { background: #f3f4f6; color: #111827; }
-    .nav-links a.active { background: #1f2937; color: #fff; }
-    .btn-logout {
-      background: none;
-      border: none;
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: #6b7280;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: 'Poppins', sans-serif;
-      white-space: nowrap;
-    }
-    .btn-logout:hover { background: #f3f4f6; color: #111827; }
+      /* APAR STATUS */
+      .apar-status-card {
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+      .apar-status-card .as-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+      .apar-status-card #status   { font-size: 1.1rem; font-weight: 700; color: var(--green); }
+      .apar-status-card #status.danger { color: #f87171; }
+      .apar-status-card .as-icon  { font-size: 2.5rem; }
 
-    main { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem; }
+      /* EMERGENCY BTN */
+      .btn-emergency {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-weight: 700;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        transition: all 0.2s;
+        box-shadow: 0 4px 20px rgba(239,68,68,.3);
+        letter-spacing: 0.03em;
+      }
+      .btn-emergency:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(239,68,68,.45);
+      }
 
-    /* WARNING ALERT */
-    #warningBox {
-      display: none;
-      background: #fee2e2;
-      border: 1px solid #fca5a5;
-      color: #b91c1c;
-      border-radius: 10px;
-      padding: 0.9rem 1.25rem;
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.875rem;
-      margin-bottom: 1.25rem;
-      animation: blink 1s infinite;
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
+      @media (max-width: 500px) {
+        .info-pair { grid-template-columns: 1fr; }
+      }
+    </style>
+  </x-slot>
 
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
-
-    .card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1.1rem 1.25rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .card span { font-size: 0.9rem; color: #6b7280; }
-    .card b { font-size: 1rem; font-weight: 600; color: #111827; }
-
-    /* STATUS APAR */
-    .status-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1.1rem 1.25rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-    }
-    .status-card p { font-size: 0.82rem; color: #6b7280; margin-bottom: 3px; }
-    #status { font-size: 1.05rem; font-weight: 700; color: #059669; }
-    #status.danger { color: #dc2626; }
-    .status-icon { font-size: 2.25rem; }
-
-    /* BUTTON */
-    .btn-emergency {
-      display: block;
-      width: 100%;
-      text-align: center;
-      background: #dc2626;
-      color: #fff;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-family: 'Poppins', sans-serif;
-      transition: opacity 0.15s;
-    }
-    .btn-emergency:hover { opacity: 0.88; }
-
-    @media (max-width: 580px) {
-      .grid-2 { grid-template-columns: 1fr; }
-      .btn-emergency { font-size: 0.875rem; padding: 13px; }
-      #warningBox { font-size: 0.82rem; }
-    }
-  </style>
-</head>
-<body>
-
-<nav>
-  <span class="nav-brand">🔥 Monitoring Gas</span>
-  <div class="nav-links">
-    <a href="{{ route('dashboard') }}" class="active">Dashboard</a>
-    <a href="{{ route('notifikasi') }}">Notifikasi</a>
-    <a href="{{ route('apar') }}">Kontrol APAR</a>
-    <form action="{{ route('logout') }}" method="POST" style="display: inline;">
-      @csrf
-      <button type="submit" class="btn-logout">Keluar</button>
-    </form>
+  <div class="page-header">
+    <h1>📞 Kontak Darurat</h1>
+    <p>Informasi status dan saluran pelaporan keadaan darurat</p>
   </div>
-</nav>
-
-<main>
 
   <!-- WARNING -->
-  <div id="warningBox">🚨 PERINGATAN! KEBOCORAN GAS TERDETEKSI 🚨</div>
-
-  <!-- INFO -->
-  <div class="grid-2">
-    <div class="card">
-      <span>Gas Level</span>
-      <b id="gas">120 PPM</b>
+  <div id="warningBanner" class="hidden">
+    <div class="w-icon">🚨</div>
+    <div>
+      <div class="w-text">PERINGATAN! KEBOCORAN GAS TERDETEKSI</div>
+      <div class="w-sub">Segera laporkan ke pemadam kebakaran atau hubungi nomor darurat</div>
     </div>
-    <div class="card">
-      <span>Suhu</span>
-      <b id="suhu">27°C</b>
+  </div>
+
+  <!-- DATA SENSOR -->
+  <div style="margin-bottom:1rem;">
+    <div class="glass-card info-item">
+      <div>
+        <div class="i-label">Gas Level</div>
+        <div class="i-value" id="gas">120 PPM</div>
+      </div>
+      <span style="font-size:1.5rem;">💨</span>
     </div>
   </div>
 
   <!-- STATUS APAR -->
-  <div class="status-card">
+  <div class="glass-card apar-status-card">
     <div>
-      <p>Status APAR</p>
+      <div class="as-label">Status APAR</div>
       <div id="status">AMAN</div>
     </div>
-    <div class="status-icon">🧯</div>
+    <div class="as-icon">🧯</div>
   </div>
 
-  <!-- BUTTON DARURAT -->
+  <!-- EMERGENCY BUTTON -->
   <button onclick="kirimWA()" class="btn-emergency">
     🚒 LAPORKAN KE PEMADAM (DARURAT)
   </button>
 
-</main>
+  <x-slot name="scripts">
+    <script>
+    let gasValue = 120;
+    if (gasValue > 100) {
+      document.getElementById("warningBanner").className = "visible";
+      const s = document.getElementById("status");
+      s.textContent = "BAHAYA"; s.classList.add("danger");
+    }
 
-<script>
-function kirimWA() {
-  let gas = document.getElementById("gas").innerText;
-  let suhu = document.getElementById("suhu").innerText;
+    function kirimWA() {
+      const gas  = document.getElementById("gas").innerText;
+      const pesan = `🚨 *LAPORAN DARURAT KEBAKARAN / KEBOCORAN GAS* 🚨\n\n📍 Lokasi: (isi lokasi)\n💨 Gas Level: ${gas}\n\n⚠️ Terjadi indikasi kebocoran gas LPG.\nMohon segera ditindaklanjuti.\n\nTerima kasih.`;
+      window.open("https://wa.me/6285290671398?text=" + encodeURIComponent(pesan), '_blank');
+    }
+    </script>
+  </x-slot>
 
-  let pesan = `🚨 *LAPORAN DARURAT KEBAKARAN / KEBOCORAN GAS* 🚨\n\n📍 Lokasi: (isi lokasi)\n💨 Gas Level: ${gas}\n🌡️ Suhu: ${suhu}\n\n⚠️ Terjadi indikasi kebocoran gas LPG.\nMohon segera ditindaklanjuti oleh petugas pemadam kebakaran.\n\nTerima kasih.`;
-
-  let nomor = "6285290671398";
-  window.open("https://wa.me/" + nomor + "?text=" + encodeURIComponent(pesan), '_blank');
-}
-
-// SIMULASI DETEKSI BAHAYA
-let gasValue = 120;
-if (gasValue > 100) {
-  document.getElementById("warningBox").style.display = "block";
-  let s = document.getElementById("status");
-  s.textContent = "BAHAYA";
-  s.classList.add("danger");
-}
-</script>
-</body>
-</html>
+</x-layout>
