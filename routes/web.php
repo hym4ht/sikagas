@@ -45,6 +45,34 @@ Route::middleware(['auth'])->group(function () {
         return view('apar', compact('aparControl'));
     })->name('apar');
 
+    Route::get('/notifikasi/pdf', function (\Illuminate\Http\Request $request) {
+        $query = SensorData::oldest(); // urut dari terlama ke terbaru
+
+        $judulPeriode = 'Semua Data';
+
+        if ($request->tanggal) {
+            $query->whereDate('created_at', $request->tanggal);
+            $judulPeriode = 'Harian: ' . \Carbon\Carbon::parse($request->tanggal)->translatedFormat('d F Y');
+        } elseif ($request->bulan && $request->tahun) {
+            $query->whereMonth('created_at', $request->bulan)
+                  ->whereYear('created_at', $request->tahun);
+            $namaBulan = ['','Januari','Februari','Maret','April','Mei','Juni',
+                          'Juli','Agustus','September','Oktober','November','Desember'];
+            $judulPeriode = 'Bulanan: ' . $namaBulan[(int)$request->bulan] . ' ' . $request->tahun;
+        } elseif ($request->bulan) {
+            $query->whereMonth('created_at', $request->bulan);
+            $namaBulan = ['','Januari','Februari','Maret','April','Mei','Juni',
+                          'Juli','Agustus','September','Oktober','November','Desember'];
+            $judulPeriode = 'Bulan: ' . $namaBulan[(int)$request->bulan];
+        } elseif ($request->tahun) {
+            $query->whereYear('created_at', $request->tahun);
+            $judulPeriode = 'Tahunan: ' . $request->tahun;
+        }
+
+        $logs = $query->get();
+        return view('notifikasi_pdf', compact('logs', 'judulPeriode'));
+    })->name('notifikasi.pdf');
+
     Route::get('/contact', function () {
         return view('contact');
     })->name('contact');
