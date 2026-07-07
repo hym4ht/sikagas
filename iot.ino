@@ -13,13 +13,14 @@ const char* aparCommandURL = "https://sikagas.web.id/api/apar/command";
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-const int pinMQ2       = 34;
+const int pinMQ2       = 34;   // Input sensor gas (D34)
 const int pinBuzzerLED = 27;
-const int pinRelay     = 26;
+const int pinRelay     = 2;    // Relay untuk blower/fan
 const int pinMotorDC   = 33;
 
-int  batasBahaya  = 2300;
-int  batasWaspada = 1500;
+// Batas bahaya: gas > 1500 = BAHAYA, gas <= 1500 = AMAN
+int  batasBahaya = 1500;
+
 bool statusBahayaTerkirim = false;
 
 // Perintah manual terakhir dari web ("ON" / "OFF")
@@ -90,7 +91,7 @@ void setup() {
 
   pinMode(pinMQ2, INPUT);
   pinMode(pinBuzzerLED, OUTPUT);
-  pinMode(pinRelay, OUTPUT);
+  pinMode(pinRelay, OUTPUT);   // Relay blower di pin 2
   pinMode(pinMotorDC, OUTPUT);
 
   digitalWrite(pinBuzzerLED, LOW);
@@ -135,10 +136,10 @@ void setup() {
 // ============================================================
 // Timer
 // ============================================================
-unsigned long lastKirim        = 0;
+unsigned long lastKirim         = 0;
 unsigned long lastAmbilPerintah = 0;
 
-const unsigned long intervalKirim        = 1000;  // kirim sensor tiap 1 detik
+const unsigned long intervalKirim         = 1000;  // kirim sensor tiap 1 detik
 const unsigned long intervalAmbilPerintah = 5000;  // polling perintah tiap 5 detik
 
 // ============================================================
@@ -153,7 +154,7 @@ void loop() {
     lastAmbilPerintah = now;
   }
 
-  // --- Baca sensor gas ---
+  // --- Baca sensor gas (D34) ---
   int gasValue = analogRead(pinMQ2);
   Serial.println("Gas: " + String(gasValue) + " | Perintah: " + perintahManual);
 
@@ -162,51 +163,26 @@ void loop() {
   bool buzzerAktif = false;
 
   if (gasValue > batasBahaya) {
-    // ===== BAHAYA — sensor override segalanya =====
+    // ===== BAHAYA — gas > 1500, sensor override segalanya =====
     statusSensor = "BAHAYA";
     aparAktif    = true;
     buzzerAktif  = true;
 
     digitalWrite(pinBuzzerLED, HIGH);
-    digitalWrite(pinRelay, HIGH);
+    digitalWrite(pinRelay, HIGH);    // Relay blower (pin 2) ON
     digitalWrite(pinMotorDC, HIGH);
 
     lcd.setCursor(0, 0);
     lcd.print("!!!! BAHAYA GAS !!");
     lcd.setCursor(0, 1);
-    lcd.print("   APAR AKTIF    ");
+    lcd.print("Gas: "); lcd.print(gasValue); lcd.print("   ");
 
     if (!statusBahayaTerkirim) {
       statusBahayaTerkirim = true;
     }
 
-  } else if (gasValue > batasWaspada) {
-    // ===== WASPADA =====
-    statusSensor = "WASPADA";
-    buzzerAktif  = true;
-
-    // Perintah manual ON → aktifkan relay+motor walau waspada
-    if (perintahManual == "ON") {
-      aparAktif = true;
-      digitalWrite(pinRelay, HIGH);
-      digitalWrite(pinMotorDC, HIGH);
-    } else {
-      aparAktif = false;
-      digitalWrite(pinRelay, HIGH);  // relay tetap aktif di waspada (blower/ventilasi)
-      digitalWrite(pinMotorDC, LOW);
-    }
-
-    digitalWrite(pinBuzzerLED, (millis() / 400) % 2);
-
-    lcd.setCursor(0, 0);
-    lcd.print("!! WASPADA GAS !!");
-    lcd.setCursor(0, 1);
-    lcd.print("Gas: "); lcd.print(gasValue); lcd.print("   ");
-
-    statusBahayaTerkirim = false;
-
   } else {
-    // ===== AMAN — ikuti perintah manual =====
+    // ===== AMAN — gas <= 1500, ikuti perintah manual =====
     statusSensor = "AMAN";
 
     if (perintahManual == "ON") {
@@ -215,7 +191,7 @@ void loop() {
       buzzerAktif  = false;
 
       digitalWrite(pinBuzzerLED, LOW);
-      digitalWrite(pinRelay, HIGH);
+      digitalWrite(pinRelay, HIGH);    // Relay blower (pin 2) ON
       digitalWrite(pinMotorDC, HIGH);
 
       lcd.setCursor(0, 0);
@@ -229,11 +205,11 @@ void loop() {
       buzzerAktif  = false;
 
       digitalWrite(pinBuzzerLED, LOW);
-      digitalWrite(pinRelay, LOW);
+      digitalWrite(pinRelay, LOW);     // Relay blower (pin 2) OFF
       digitalWrite(pinMotorDC, LOW);
 
       lcd.setCursor(0, 0);
-      lcd.print("  STATUS: AMAN   ");
+      lcd.print("  STATUS: AMAN  ");
       lcd.setCursor(0, 1);
       lcd.print("Gas: "); lcd.print(gasValue); lcd.print("   ");
     }

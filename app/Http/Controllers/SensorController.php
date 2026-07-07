@@ -19,7 +19,7 @@ class SensorController extends Controller
         // Validasi sederhana
         $request->validate([
             'gas_value' => 'required|integer',
-            'status'    => 'required|string|in:AMAN,WASPADA,BAHAYA',
+            'status'    => 'required|string|in:AMAN,BAHAYA',
         ]);
 
         // Ambil data terbaru sebelum data baru dibuat untuk mengecek perubahan status
@@ -38,10 +38,7 @@ class SensorController extends Controller
             $this->kirimWhatsApp('BAHAYA', $request->gas_value);
         }
 
-        // Kirim WhatsApp jika status WASPADA dan sebelumnya AMAN (transisi pertama)
-        if ($request->status === 'WASPADA' && (!$latest || $latest->status === 'AMAN')) {
-            $this->kirimWhatsApp('WASPADA', $request->gas_value);
-        }
+        // WASPADA dihapus — hanya AMAN dan BAHAYA
 
         return response()->json([
             'success'      => true,

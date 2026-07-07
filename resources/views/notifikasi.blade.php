@@ -114,8 +114,6 @@
             <td>
               @if($log->status === 'BAHAYA')
                 <span class="badge badge-red">🚨 BAHAYA</span>
-              @elseif($log->status === 'WASPADA')
-                <span class="badge badge-yellow">⚠️ WASPADA</span>
               @else
                 <span class="badge badge-green">✅ AMAN</span>
               @endif
@@ -129,5 +127,12 @@
       </tbody>
     </table>
   </div>
+
+  {{-- Pagination --}}
+  @if($logs->hasPages())
+  <div style="margin-top:1.25rem; display:flex; justify-content:center;">
+    {{ $logs->links() }}
+  </div>
+  @endif
 
 </x-layout>

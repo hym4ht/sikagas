@@ -23,8 +23,20 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard', compact('latestData'));
     })->name('dashboard');
 
-    Route::get('/notifikasi', function () {
-        $logs = SensorData::latest()->take(50)->get();
+    Route::get('/notifikasi', function (\Illuminate\Http\Request $request) {
+        $query = SensorData::latest();
+
+        if ($request->tanggal) {
+            $query->whereDate('created_at', $request->tanggal);
+        }
+        if ($request->bulan) {
+            $query->whereMonth('created_at', $request->bulan);
+        }
+        if ($request->tahun) {
+            $query->whereYear('created_at', $request->tahun);
+        }
+
+        $logs = $query->paginate(50)->withQueryString();
         return view('notifikasi', compact('logs'));
     })->name('notifikasi');
 
